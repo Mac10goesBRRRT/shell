@@ -4,10 +4,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <dirent.h>
 #include <sys/syslimits.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 /*
  * Queries the current working directory
  * */
@@ -16,7 +13,10 @@ char *get_cwd() {
   getcwd(cwd, PATH_MAX);
   return cwd;
 }
-
+/*
+ * Searches for the program in PATH and executes it as child process.
+ * Blocks the parent process until the command in the child process terminates
+ */
 void launch_cmd(char **args) {
   pid_t pid;
   int status;
@@ -36,6 +36,9 @@ void launch_cmd(char **args) {
   }
 }
 
+/*
+ * Splits the input from the user into tokens separated by " "
+ */
 char **tokenize_cmd(char* cmd) {
   int buffer_size = 64;
   int pos = 0;
@@ -69,7 +72,9 @@ char **tokenize_cmd(char* cmd) {
 }
 
 int main(int argc, char **argv) {
+  // Get current working dir to display to the user
   char *cwd = get_cwd();
+  // The prompt string to display
   const char *prompt = "$> ";
 
   if(cwd == NULL) {
@@ -77,10 +82,12 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
 
+  // Loop endlessly until the user inputs an "exit" command
   for(;;) {
-
+    // Prints the prompt
     printf("%s %s", cwd, prompt);
 
+    // Reads the user command from the console (inefficient).
     size_t len = 0;
     char *cmd = (char*) malloc(1);
     char c;
@@ -91,6 +98,7 @@ int main(int argc, char **argv) {
       len += 1;
     }
 
+    // Restart the loop if the user provided no input
     if(len == 0) {
       free(cmd);
       continue;
@@ -99,14 +107,18 @@ int main(int argc, char **argv) {
     char **tokens = tokenize_cmd(cmd);
 
     if(strcmp(tokens[0], "pwd") == 0) {
+      // Just print the current working directory
       printf("%s\n", cwd);
       free(cmd);
+      free(tokens);
     } else if(strcmp(tokens[0], "exit") == 0) {
+      // Free resources and then break from the loop
       free(cmd);
+      free(tokens);
       break;
     } else if(strcmp(tokens[0], "cd") == 0) {
       char *folder = tokens[1];
-      
+      // Change dir or output an error message
       if(chdir(folder) != 0) {
         printf("cd: path %s does not exist\n", folder);
       } else {
@@ -114,8 +126,12 @@ int main(int argc, char **argv) {
         cwd = get_cwd();
       }
       free(cmd);
+      free(tokens);
     } else {
+      // Try to find the command in PATH and execute it
       launch_cmd(tokens);
+      free(cmd);
+      free(tokens);
     }
   }
 
