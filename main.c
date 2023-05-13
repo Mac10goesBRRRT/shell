@@ -4,7 +4,11 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#ifdef __linux__
+#include <linux/limits.h>
+#else
 #include <sys/syslimits.h>
+#endif
 #include <signal.h>
 /*
  * Output a Help Message when Ctrl + C is pressed
