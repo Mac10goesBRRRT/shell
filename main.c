@@ -5,6 +5,14 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sys/syslimits.h>
+#include <signal.h>
+/*
+ * Output a Help Message when Ctrl + C is pressed
+ */
+void handle_ctrlc(int _unused) {
+  printf("\nuse the command \"exit\" to quit this program.\n");
+}
+
 /*
  * Queries the current working directory
  * */
@@ -81,6 +89,8 @@ int main(int argc, char **argv) {
     printf("current working directory is null\n");
     exit(EXIT_FAILURE);
   }
+
+  signal(SIGINT, handle_ctrlc);
 
   // Loop endlessly until the user inputs an "exit" command
   for(;;) {
